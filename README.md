@@ -17,11 +17,7 @@ Fontes em português brasileiro para o [Aidoku](https://aidoku.app/), compiladas
 
 ## Como usar
 
-Adicione a source list no Aidoku:
-
-```
-https://raw.githubusercontent.com/blazerTweaks/aidoku-pt-br-sources/main/source.json
-```
+On a device with Aidoku (0.7+) installed, navigate to the settings tab, and under the source lists page add `https://raw.githubusercontent.com/blazerTweaks/aidoku-pt-br-sources/main/source.json`.
 
 ## Disclaimer
 
