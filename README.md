@@ -4,9 +4,9 @@ Fontes em português brasileiro para o [Aidoku](https://aidoku.app/), compiladas
 
 ## Sources
 
-| ID | Nome | Idioma | 
-|----|------|--------|
-| `pt-br.mangaflix` | MangaFlix | pt-BR | 
+| ID                | Nome      | Idioma |
+| ----------------- | --------- | ------ |
+| `pt-br.mangaflix` | MangaFlix | pt-BR  |
 
 ## Sources list
 
