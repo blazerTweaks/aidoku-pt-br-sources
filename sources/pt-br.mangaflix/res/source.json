@@ -6,8 +6,5 @@
 		"url": "https://mangaflix.net",
 		"contentRating": 1,
 		"languages": ["pt-BR"]
-	},
-	"listings": [
-		{ "id": "browse", "name": "Browse" }
-	]
+	}
 }
