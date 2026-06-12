@@ -5,8 +5,8 @@
 			"id": "pt-br.mangaflix",
 			"name": "MangaFlix",
 			"version": 1,
-			"iconURL": "https://mangaflix.net/favicon.ico",
-			"downloadURL": "https://raw.githubusercontent.com/blazerTweaks/aidoku-pt-br-sources/main/pt-br.mangaflix/mangaflix.wasm",
+			"iconURL": "https://raw.githubusercontent.com/blazerTweaks/aidoku-pt-br-sources/main/sources/pt-br.mangaflix/res/icon.png",
+			"downloadURL": "https://raw.githubusercontent.com/blazerTweaks/aidoku-pt-br-sources/main/sources/pt-br.mangaflix/package.aix",
 			"languages": ["pt-BR"],
 			"contentRating": 1,
 			"baseURL": "https://mangaflix.net"
