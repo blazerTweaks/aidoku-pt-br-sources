@@ -1,6 +1,6 @@
 #![no_std]
 use aidoku::{
-	alloc::{string::String, vec::Vec},
+	alloc::{string::{String, ToString}, vec::Vec},
 	imports::net::Request,
 	imports::std::parse_date,
 	prelude::*,
@@ -21,7 +21,7 @@ fn request(url: &str) -> core::result::Result<Request, aidoku::imports::net::Req
 	Ok(Request::get(url)?.header("User-Agent", USER_AGENT))
 }
 
-fn parse_manga_list(html: &aidoku::prelude::HtmlDocument) -> Vec<Manga> {
+fn parse_manga_list(html: &Html) -> Vec<Manga> {
 	let mut entries: Vec<Manga> = Vec::new();
 	if let Some(cards) = html.select(".listupd .bs") {
 		for card in cards {
@@ -85,7 +85,7 @@ fn parse_manga_list(html: &aidoku::prelude::HtmlDocument) -> Vec<Manga> {
 	entries
 }
 
-fn parse_portuguese_date(date_str: &str) -> Option<u64> {
+fn parse_portuguese_date(date_str: &str) -> Option<i64> {
 	let date_str = date_str.trim();
 	if date_str.is_empty() {
 		return None;
@@ -138,20 +138,17 @@ fn parse_chapter_number(num_text: &str) -> Option<f32> {
 	last_num
 }
 
-fn get_image_pages(html: &aidoku::prelude::HtmlDocument) -> Result<Vec<Page>> {
+fn get_image_pages(html: &Html) -> Result<Vec<Page>> {
 	let mut pages: Vec<Page> = Vec::new();
-	let mut index = 0;
 
 	if let Some(imgs) = html.select("#readerarea img") {
 		for img in imgs {
 			if let Some(src) = img.attr("src") {
 				if !src.is_empty() && !src.contains("readerarea.svg") {
 					pages.push(Page {
-						index,
-						content: PageContent::Url(src),
+						content: PageContent::Url(src, None),
 						..Default::default()
 					});
-					index += 1;
 				}
 			}
 		}
@@ -164,21 +161,18 @@ fn get_image_pages(html: &aidoku::prelude::HtmlDocument) -> Result<Vec<Page>> {
 	Ok(pages)
 }
 
-fn get_novel_pages(html: &aidoku::prelude::HtmlDocument) -> Result<Vec<Page>> {
+fn get_novel_pages(html: &Html) -> Result<Vec<Page>> {
 	let mut pages: Vec<Page> = Vec::new();
 
 	if let Some(imgs) = html.select("#readerarea img") {
 		let mut has_images = false;
-		let mut index = 0;
 		for img in imgs {
 			if let Some(src) = img.attr("src") {
 				if !src.is_empty() && !src.contains("readerarea.svg") && !src.contains("apoiar") {
 					pages.push(Page {
-						index,
-						content: PageContent::Url(src),
+						content: PageContent::Url(src, None),
 						..Default::default()
 					});
-					index += 1;
 					has_images = true;
 				}
 			}
@@ -192,7 +186,6 @@ fn get_novel_pages(html: &aidoku::prelude::HtmlDocument) -> Result<Vec<Page>> {
 		let clean = content.trim().to_string();
 		if !clean.is_empty() {
 			pages.push(Page {
-				index: 0,
 				content: PageContent::Text(clean),
 				..Default::default()
 			});
@@ -218,10 +211,8 @@ impl Source for Tsundoku {
 	) -> Result<MangaPageResult> {
 		if let Some(q) = query {
 			let url = format!("{}/?s={}", BASE_URL, q);
-			println!("[Tsundoku] search url={}", url);
 			let html = request(&url)?.html()?;
 			let entries = parse_manga_list(&html);
-			println!("[Tsundoku] search found {} entries", entries.len());
 			Ok(MangaPageResult {
 				entries,
 				has_next_page: false,
@@ -257,7 +248,6 @@ impl Source for Tsundoku {
 		}
 
 		let url = format!("{}/manga/{}/", BASE_URL, slug);
-		println!("[Tsundoku] get_manga_detail slug={}", slug);
 		let html = request(&url)?.html()?;
 
 		manga.url = Some(url.clone());
@@ -372,8 +362,6 @@ impl Source for Tsundoku {
 
 	fn get_page_list(&self, manga: Manga, chapter: Chapter) -> Result<Vec<Page>> {
 		let chapter_url = &chapter.key;
-		println!("[Tsundoku] get_page_list url={}", chapter_url);
-
 		let html = request(chapter_url)?.html()?;
 
 		let is_novel = manga
@@ -391,8 +379,7 @@ impl Source for Tsundoku {
 
 impl ListingProvider for Tsundoku {
 	fn get_manga_list(&self, listing: Listing, _page: i32) -> Result<MangaPageResult> {
-		let listing_id = listing.id.as_deref().unwrap_or("todos");
-		println!("[Tsundoku] get_manga_list listing={}", listing_id);
+		let listing_id = listing.id.as_ref().map(|s| s.as_str()).unwrap_or("todos");
 
 		let mut all_entries: Vec<Manga> = Vec::new();
 		let mut seen_keys: Vec<String> = Vec::new();
@@ -400,7 +387,7 @@ impl ListingProvider for Tsundoku {
 		if listing_id == "todos" {
 			for (_name, path) in CATEGORIES {
 				let url = format!("{}{}", BASE_URL, path);
-				if let Ok(html) = request(&url)?.html() {
+				if let Ok(html) = request(&url).and_then(|r| r.html().map_err(Into::into)) {
 					for manga in parse_manga_list(&html) {
 						if !seen_keys.contains(&manga.key) {
 							seen_keys.push(manga.key.clone());
@@ -416,13 +403,10 @@ impl ListingProvider for Tsundoku {
 				.map(|(_, path)| *path)
 				.unwrap_or("/mangas/");
 			let url = format!("{}{}", BASE_URL, path);
-			println!("[Tsundoku] listing url={}", url);
-			if let Ok(html) = request(&url)?.html() {
+			if let Ok(html) = request(&url).and_then(|r| r.html().map_err(Into::into)) {
 				all_entries = parse_manga_list(&html);
 			}
 		}
-
-		println!("[Tsundoku] listing found {} entries", all_entries.len());
 
 		Ok(MangaPageResult {
 			entries: all_entries,
