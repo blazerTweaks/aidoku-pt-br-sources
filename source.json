@@ -4,7 +4,7 @@
 		{
 			"id": "pt-br.mangaflix",
 			"name": "MangaFlix",
-			"version": 2,
+			"version": 3,
 			"iconURL": "https://raw.githubusercontent.com/blazerTweaks/aidoku-pt-br-sources/main/sources/pt-br.mangaflix/res/icon.png",
 			"downloadURL": "https://raw.githubusercontent.com/blazerTweaks/aidoku-pt-br-sources/main/sources/pt-br.mangaflix/package.aix",
 			"languages": ["pt-BR"],
