@@ -5,8 +5,8 @@ use aidoku::{
 	imports::net::Request,
 	imports::std::parse_date,
 	prelude::*,
-	Chapter, DeepLinkHandler, DeepLinkResult, FilterValue, Listing, ListingProvider, Manga,
-	MangaPageResult, MangaStatus, Page, PageContent, Result, Source,
+	AidokuError, Chapter, DeepLinkHandler, DeepLinkResult, FilterValue, Listing, ListingProvider,
+	Manga, MangaPageResult, MangaStatus, Page, PageContent, Result, Source,
 };
 use serde::Deserialize;
 
@@ -89,8 +89,21 @@ impl Source for MangaFlix {
 		} else {
 			format!("{}/br/browse?page={}", BASE_URL, page)
 		};
+		println!("[MangaFlix] get_search_manga_list url={} page={}", url, page);
 
-		let html = request(&url)?.html()?;
+		let html = match request(&url) {
+			Ok(req) => match req.html() {
+				Ok(doc) => doc,
+				Err(e) => {
+					println!("[MangaFlix] html() error: {:?}", e);
+					return Err(AidokuError::message(format!("html error: {:?}", e)));
+				}
+			},
+			Err(e) => {
+				println!("[MangaFlix] request() error: {:?}", e);
+				return Err(AidokuError::message(format!("request error: {:?}", e)));
+			}
+		};
 
 		let mut entries: Vec<Manga> = Vec::new();
 		if let Some(cards) = html.select("a[href^='/br/manga/']") {
@@ -124,6 +137,7 @@ impl Source for MangaFlix {
 		}
 
 		let has_next_page = entries.len() >= 20;
+		println!("[MangaFlix] browse found {} entries, has_next={}", entries.len(), has_next_page);
 
 		Ok(MangaPageResult {
 			entries,
