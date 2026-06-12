@@ -1,7 +1,6 @@
 #![no_std]
 use aidoku::{
 	alloc::{string::String, vec::Vec},
-	helpers::uri::encode_uri_component,
 	imports::net::Request,
 	imports::std::parse_date,
 	prelude::*,
@@ -84,11 +83,15 @@ impl Source for MangaFlix {
 		page: i32,
 		_filters: Vec<FilterValue>,
 	) -> Result<MangaPageResult> {
-		let url = if let Some(q) = query {
-			format!("{}/br/browse?search={}&page={}", BASE_URL, &encode_uri_component(&q), page)
-		} else {
-			format!("{}/br/browse?page={}", BASE_URL, page)
-		};
+		// mangaflix.net não tem busca server-side
+		if query.is_some() {
+			return Ok(MangaPageResult {
+				entries: Vec::new(),
+				has_next_page: false,
+			});
+		}
+
+		let url = format!("{}/br/browse?page={}", BASE_URL, page);
 		println!("[MangaFlix] get_search_manga_list url={} page={}", url, page);
 
 		let html = match request(&url) {
