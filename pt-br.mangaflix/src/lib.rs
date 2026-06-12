@@ -6,7 +6,7 @@ use aidoku::{
 	imports::std::parse_date,
 	prelude::*,
 	Chapter, DeepLinkHandler, DeepLinkResult, FilterValue, Listing, ListingProvider, Manga,
-	MangaPageResult, MangaStatus, Page, PageContent, 	Result, Source,
+	MangaPageResult, MangaStatus, Page, PageContent, Result, Source,
 };
 use serde::Deserialize;
 
@@ -80,9 +80,9 @@ impl Source for MangaFlix {
 		_filters: Vec<FilterValue>,
 	) -> Result<MangaPageResult> {
 		let url = if let Some(q) = query {
-			format!("{}br/browse?search={}&page={}", BASE_URL, &encode_uri_component(&q), page)
+			format!("{}/br/browse?search={}&page={}", BASE_URL, &encode_uri_component(&q), page)
 		} else {
-			format!("{}br/browse?page={}", BASE_URL, page)
+			format!("{}/br/browse?page={}", BASE_URL, page)
 		};
 
 		let html = Request::get(&url)?.html()?;
@@ -96,7 +96,7 @@ impl Source for MangaFlix {
 					continue;
 				}
 
-				let title = card.select_first("p").and_then(|e| e.text()).unwrap_or_default();
+				let title = card.select("span").and_then(|spans| spans.last()).and_then(|e| e.text()).unwrap_or_default();
 				let cover = card
 					.select_first("img")
 					.and_then(|e| e.attr("src"))
