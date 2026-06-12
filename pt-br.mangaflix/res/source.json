@@ -5,6 +5,7 @@
 		"version": 1,
 		"url": "https://mangaflix.net",
 		"contentRating": 1,
-		"languages": ["pt-br"]
+		"languages": ["pt-br"],
+		"file": "mangaflix.wasm"
 	}
 }
