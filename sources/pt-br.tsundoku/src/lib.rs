@@ -1,8 +1,11 @@
 #![no_std]
 use aidoku::{
 	alloc::{string::{String, ToString}, vec::Vec},
-	imports::net::Request,
-	imports::std::parse_date,
+	imports::{
+		html::Document,
+		net::Request,
+		std::parse_date,
+	},
 	prelude::*,
 	AidokuError, Chapter, DeepLinkHandler, DeepLinkResult, FilterValue, Listing, ListingProvider,
 	Manga, MangaPageResult, MangaStatus, Page, PageContent, Result, Source,
@@ -21,7 +24,7 @@ fn request(url: &str) -> core::result::Result<Request, aidoku::imports::net::Req
 	Ok(Request::get(url)?.header("User-Agent", USER_AGENT))
 }
 
-fn parse_manga_list(html: &Html) -> Vec<Manga> {
+fn parse_manga_list(html: &Document) -> Vec<Manga> {
 	let mut entries: Vec<Manga> = Vec::new();
 	if let Some(cards) = html.select(".listupd .bs") {
 		for card in cards {
@@ -110,10 +113,14 @@ fn parse_portuguese_date(date_str: &str) -> Option<i64> {
 	for (pt_name, num) in &months {
 		if lower.contains(pt_name) {
 			let normalized = lower.replace(pt_name, num);
-			let parts: Vec<&str> = normalized.split(|c| c == ' ' || c == ',').filter(|s| !s.is_empty()).collect();
+			let parts: Vec<&str> = normalized
+				.split(|c| c == ' ' || c == ',')
+				.filter(|s| !s.is_empty())
+				.collect();
 			if parts.len() >= 3 {
-				let m = parts[0];
-				let d = parts[1];
+				// Formato esperado: "15 janeiro 2024" → parts = ["15", "01", "2024"]
+				let d = parts[0];
+				let m = num; // já convertido
 				let y = parts[2];
 				let formatted = format!("{}-{}-{}", y, m, d);
 				return parse_date(&formatted, "yyyy-MM-dd");
@@ -138,7 +145,7 @@ fn parse_chapter_number(num_text: &str) -> Option<f32> {
 	last_num
 }
 
-fn get_image_pages(html: &Html) -> Result<Vec<Page>> {
+fn get_image_pages(html: &Document) -> Result<Vec<Page>> {
 	let mut pages: Vec<Page> = Vec::new();
 
 	if let Some(imgs) = html.select("#readerarea img") {
@@ -161,7 +168,7 @@ fn get_image_pages(html: &Html) -> Result<Vec<Page>> {
 	Ok(pages)
 }
 
-fn get_novel_pages(html: &Html) -> Result<Vec<Page>> {
+fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
 	let mut pages: Vec<Page> = Vec::new();
 
 	if let Some(imgs) = html.select("#readerarea img") {
@@ -379,7 +386,8 @@ impl Source for Tsundoku {
 
 impl ListingProvider for Tsundoku {
 	fn get_manga_list(&self, listing: Listing, _page: i32) -> Result<MangaPageResult> {
-		let listing_id = listing.id.as_ref().map(|s| s.as_str()).unwrap_or("todos");
+		// listing.id é String diretamente (não Option<String>)
+		let listing_id = listing.id.as_str();
 
 		let mut all_entries: Vec<Manga> = Vec::new();
 		let mut seen_keys: Vec<String> = Vec::new();
