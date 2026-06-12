@@ -180,22 +180,31 @@ impl Source for MangaFlix {
 			if let Some(chapter_list) = manga_data.chapters {
 				for ch in chapter_list {
 					let number: f32 = ch.number.parse().unwrap_or(0.0);
-					let timestamp = ch
-						.release_date
-						.as_ref()
-						.and_then(|d| parse_date(d.as_str(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'"));
+					let timestamp = ch.release_date.as_ref().and_then(|d| {
+						parse_date(d.as_str(), "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+							.or_else(|| parse_date(d.as_str(), "yyyy-MM-dd'T'HH:mm:ss'Z'"))
+							.or_else(|| parse_date(d.as_str(), "yyyy-MM-dd"))
+					});
+
+					let date_line = ch.release_date.as_ref().map(|d| format!("\n{} - pt-BR", &d[..10.min(d.len())])).unwrap_or_default();
+					let display_title = format!("{}{}", ch.name.unwrap_or_default(), date_line);
 
 					chapters.push(Chapter {
 						key: ch._id,
 						chapter_number: Some(number),
-						title: ch.name,
+						title: Some(display_title),
 						date_uploaded: timestamp,
 						..Default::default()
 					});
 				}
 			}
 
-			chapters.reverse();
+			chapters.sort_by(|a, b| {
+				b.chapter_number
+					.unwrap_or(0.0)
+					.partial_cmp(&a.chapter_number.unwrap_or(0.0))
+					.unwrap_or(core::cmp::Ordering::Equal)
+			});
 			manga.chapters = Some(chapters);
 		}
 
