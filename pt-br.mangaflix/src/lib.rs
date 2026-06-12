@@ -12,6 +12,11 @@ use serde::Deserialize;
 
 const BASE_URL: &str = "https://mangaflix.net";
 const API_URL: &str = "https://api.mangaflix.net";
+const USER_AGENT: &str = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+
+fn request(url: &str) -> core::result::Result<Request, aidoku::imports::net::RequestError> {
+	Ok(Request::get(url)?.header("User-Agent", USER_AGENT))
+}
 
 #[derive(Deserialize)]
 struct MangaResponse {
@@ -85,7 +90,7 @@ impl Source for MangaFlix {
 			format!("{}/br/browse?page={}", BASE_URL, page)
 		};
 
-		let html = Request::get(&url)?.html()?;
+		let html = request(&url)?.html()?;
 
 		let mut entries: Vec<Manga> = Vec::new();
 		if let Some(cards) = html.select("a[href^='/br/manga/']") {
@@ -133,7 +138,7 @@ impl Source for MangaFlix {
 		needs_chapters: bool,
 	) -> Result<Manga> {
 		let url = format!("{}/v1/mangas/{}", API_URL, &manga.key);
-		let response = Request::get(&url)?.send()?;
+		let response = request(&url)?.send()?;
 		let data: MangaResponse = response.get_json_owned()?;
 		let manga_data = data.data;
 
@@ -182,7 +187,7 @@ impl Source for MangaFlix {
 
 	fn get_page_list(&self, _manga: Manga, chapter: Chapter) -> Result<Vec<Page>> {
 		let url = format!("{}/v1/chapters/{}", API_URL, &chapter.key);
-		let response = Request::get(&url)?.send()?;
+		let response = request(&url)?.send()?;
 		let data: PagesResponse = response.get_json_owned()?;
 
 		let mut pages: Vec<(i32, String)> = Vec::new();
