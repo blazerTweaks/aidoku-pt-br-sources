@@ -38,6 +38,23 @@ struct PosterData {
 }
 
 #[derive(Deserialize)]
+struct BrowseResponse {
+	data: Vec<CategoryData>,
+}
+
+#[derive(Deserialize)]
+struct CategoryData {
+	items: Vec<BrowseItem>,
+}
+
+#[derive(Deserialize)]
+struct BrowseItem {
+	_id: String,
+	name: String,
+	poster: Option<PosterData>,
+}
+
+#[derive(Deserialize)]
 struct GenreData {
 	_id: String,
 	name: String,
@@ -83,10 +100,38 @@ impl Source for MangaFlix {
 		page: i32,
 		_filters: Vec<FilterValue>,
 	) -> Result<MangaPageResult> {
-		// mangaflix.net não tem busca server-side
-		if query.is_some() {
+		if let Some(q) = query {
+			let q_lower = q.to_lowercase();
+			let url = format!("{}/v1/browse", API_URL);
+			let response = request(&url)?.send()?;
+			let data: BrowseResponse = response.get_json_owned()?;
+
+			let mut entries: Vec<Manga> = Vec::new();
+			let mut seen_ids: Vec<String> = Vec::new();
+
+			for category in data.data {
+				for item in category.items {
+					if !item.name.to_lowercase().contains(&q_lower) {
+						continue;
+					}
+					if seen_ids.iter().any(|id| *id == item._id) {
+						continue;
+					}
+					seen_ids.push(item._id.clone());
+
+					let cover = item.poster.and_then(|p| p.default_url);
+					entries.push(Manga {
+						key: item._id.clone(),
+						title: item.name,
+						cover,
+						url: Some(format!("{}/br/manga/{}", BASE_URL, &item._id)),
+						..Default::default()
+					});
+				}
+			}
+
 			return Ok(MangaPageResult {
-				entries: Vec::new(),
+				entries,
 				has_next_page: false,
 			});
 		}

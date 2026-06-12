@@ -2,7 +2,7 @@
 	"info": {
 		"id": "pt-br.mangaflix",
 		"name": "MangaFlix",
-		"version": 3,
+		"version": 4,
 		"url": "https://mangaflix.net",
 		"contentRating": 1,
 		"languages": ["pt-BR"]
