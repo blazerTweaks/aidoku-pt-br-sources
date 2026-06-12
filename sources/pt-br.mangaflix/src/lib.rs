@@ -186,13 +186,10 @@ impl Source for MangaFlix {
 							.or_else(|| parse_date(d.as_str(), "yyyy-MM-dd"))
 					});
 
-					let date_line = ch.release_date.as_ref().map(|d| format!("\n{} - pt-BR", &d[..10.min(d.len())])).unwrap_or_default();
-					let display_title = format!("{}{}", ch.name.unwrap_or_default(), date_line);
-
 					chapters.push(Chapter {
 						key: ch._id,
 						chapter_number: Some(number),
-						title: Some(display_title),
+						title: ch.name,
 						date_uploaded: timestamp,
 						..Default::default()
 					});
