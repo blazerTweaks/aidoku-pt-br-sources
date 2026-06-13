@@ -4,10 +4,10 @@ Fontes em português brasileiro para o [Aidoku](https://aidoku.app/), compiladas
 
 ## Sources
 
-| ID                | Nome      | Idioma |
-| ----------------- | --------- | ------ | -------- |
-| `pt-br.mangaflix` | MangaFlix | pt-BR  |
-| `pt-br.tsundoku`  | Tsundoku  | pt-BR  | instável |
+| ID                | Nome      | Idioma | Status                                                    |
+| ----------------- | --------- | ------ | --------------------------------------------------------- |
+| `pt-br.mangaflix` | MangaFlix | pt-BR  | ![estável](https://img.shields.io/badge/estável-green)    |
+| `pt-br.tsundoku`  | Tsundoku  | pt-BR  | ![instável](https://img.shields.io/badge/instável-orange) |
 
 ## Como usar
 
