@@ -118,9 +118,9 @@ fn parse_portuguese_date(date_str: &str) -> Option<i64> {
 				.filter(|s| !s.is_empty())
 				.collect();
 			if parts.len() >= 3 {
-				// Formato esperado: "15 janeiro 2024" → parts = ["15", "01", "2024"]
-				let d = parts[0];
-				let m = num; // já convertido
+				// Formato esperado: "janeiro 6, 2026" → replace → "01 6, 2026" → parts = ["01", "6", "2026"]
+				let d = parts[1];
+				let m = num;
 				let y = parts[2];
 				let formatted = format!("{}-{}-{}", y, m, d);
 				return parse_date(&formatted, "yyyy-MM-dd");
@@ -189,11 +189,16 @@ fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
 		}
 	}
 
-	if let Some(content) = html.select_first(".entry-content-single").and_then(|e| e.text()) {
-		let clean = content.trim().to_string();
+	if let Some(content) = html.select_first("#readerarea").and_then(|e| e.text()) {
+		let clean = content.trim();
+		let clean = if let Some(pos) = clean.find("Agradecimentos") {
+			clean[..pos].trim()
+		} else {
+			clean
+		};
 		if !clean.is_empty() {
 			pages.push(Page {
-				content: PageContent::Text(clean),
+				content: PageContent::Text(clean.to_string()),
 				..Default::default()
 			});
 			return Ok(pages);
