@@ -2,7 +2,7 @@
 	"info": {
 		"id": "pt-br.tsundoku",
 		"name": "Tsundoku",
-		"version": 3,
+		"version": 4,
 		"url": "https://tsundoku.com.br",
 		"contentRating": 1,
 		"languages": ["pt-BR"],

@@ -1,6 +1,6 @@
 #![no_std]
 use aidoku::{
-	alloc::{string::{String, ToString}, vec, vec::Vec},
+	alloc::{string::{String, ToString}, vec::Vec},
 	imports::{
 		html::Document,
 		net::Request,
@@ -131,18 +131,54 @@ fn parse_portuguese_date(date_str: &str) -> Option<i64> {
 	parse_date(date_str, "MMMM d, yyyy")
 }
 
-fn parse_chapter_number(num_text: &str) -> Option<f32> {
+fn parse_chapter_metadata(num_text: &str) -> (Option<f32>, Option<f32>) {
 	let num_text = num_text.trim();
-	if num_text.is_empty() {
-		return None;
+	if num_text.is_empty() || num_text.eq_ignore_ascii_case("oneshot") {
+		return (None, None);
 	}
-	let mut last_num: Option<f32> = None;
-	for part in num_text.split(|c: char| !c.is_ascii_digit() && c != '.') {
-		if let Ok(n) = part.parse::<f32>() {
-			last_num = Some(n);
-		}
-	}
-	last_num
+
+	let volume = if let Some(pos) = num_text.find("Vol.") {
+		let vol_str = num_text[pos + 4..]
+			.chars()
+			.skip_while(|c| !c.is_ascii_digit())
+			.take_while(|c| c.is_ascii_digit())
+			.collect::<String>();
+		vol_str.parse::<f32>().ok()
+	} else {
+		None
+	};
+
+	let chapter = if let Some(pos) = num_text.find("Cap.") {
+		let cap_str = num_text[pos + 4..]
+			.chars()
+			.skip_while(|c| !c.is_ascii_digit() && *c != '.')
+			.take_while(|c| c.is_ascii_digit() || *c == '.')
+			.collect::<String>();
+		cap_str.parse::<f32>().ok()
+	} else {
+		let cap_str = num_text
+			.chars()
+			.skip_while(|c| !c.is_ascii_digit() && *c != '.')
+			.take_while(|c| c.is_ascii_digit() || *c == '.')
+			.collect::<String>();
+		cap_str.parse::<f32>().ok()
+	};
+
+	let lower = num_text.to_lowercase();
+	let offset: f32 = if lower.contains("ilust") {
+		0.9
+	} else if lower.contains("posf") || lower.contains("pról") {
+		0.0
+	} else {
+		0.5
+	};
+
+	let vol = volume.unwrap_or(0.0);
+	let ch = chapter.unwrap_or(if lower.contains("ilust") || lower.contains("posf") || lower.contains("pról") { 9999.0 } else { 0.0 });
+
+	let sort_key = vol * 10000.0 + ch * 10.0 + offset;
+
+	(volume, Some(sort_key))
 }
 
 fn get_image_pages(html: &Document) -> Result<Vec<Page>> {
@@ -169,6 +205,8 @@ fn get_image_pages(html: &Document) -> Result<Vec<Page>> {
 }
 
 fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
+	let mut pages: Vec<Page> = Vec::new();
+
 	if let Some(content) = html.select_first("#readerarea").and_then(|e| e.text()) {
 		let clean = content.trim();
 		let clean = if let Some(pos) = clean.find("Agradecimentos") {
@@ -177,14 +215,13 @@ fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
 			clean
 		};
 		if clean.len() > 50 {
-			return Ok(vec![Page {
+			pages.push(Page {
 				content: PageContent::Text(clean.to_string()),
 				..Default::default()
-			}]);
+			});
 		}
 	}
 
-	let mut pages: Vec<Page> = Vec::new();
 	if let Some(imgs) = html.select("#readerarea img") {
 		for img in imgs {
 			if let Some(src) = img.attr("src") {
@@ -315,7 +352,7 @@ impl Source for Tsundoku {
 			}
 		}
 
-		if needs_chapters {
+				if needs_chapters {
 			let mut chapters: Vec<Chapter> = Vec::new();
 			if let Some(items) = html.select("#chapterlist ul li") {
 				for item in items {
@@ -344,11 +381,12 @@ impl Source for Tsundoku {
 						.unwrap_or_default();
 
 					let timestamp = parse_portuguese_date(&date_text);
-					let number = parse_chapter_number(&num_text);
+					let (vol, sort_key) = parse_chapter_metadata(&num_text);
 
 					chapters.push(Chapter {
 						key: href,
-						chapter_number: number,
+						volume_number: vol,
+						chapter_number: sort_key,
 						title: Some(num_text),
 						date_uploaded: timestamp,
 						..Default::default()
