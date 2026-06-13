@@ -131,54 +131,57 @@ fn parse_portuguese_date(date_str: &str) -> Option<i64> {
 	parse_date(date_str, "MMMM d, yyyy")
 }
 
-fn parse_chapter_metadata(num_text: &str) -> (Option<f32>, Option<f32>) {
+fn extract_float_after(text: &str, prefix: &str) -> Option<f32> {
+	if let Some(pos) = text.find(prefix) {
+		let after = text[pos + prefix.len()..].trim_start();
+		let mut num_str = String::new();
+		for c in after.chars() {
+			if c.is_ascii_digit() || c == '.' {
+				num_str.push(c);
+			} else if !num_str.is_empty() {
+				break;
+			}
+		}
+		if !num_str.is_empty() {
+			return num_str.parse::<f32>().ok();
+		}
+	}
+	None
+}
+
+fn parse_chapter_metadata(num_text: &str) -> Option<(Option<f32>, f32, String)> {
 	let num_text = num_text.trim();
-	if num_text.is_empty() || num_text.eq_ignore_ascii_case("oneshot") {
-		return (None, None);
+	if num_text.is_empty() {
+		return None;
 	}
 
-	let volume = if let Some(pos) = num_text.find("Vol.") {
-		let vol_str = num_text[pos + 4..]
-			.chars()
-			.skip_while(|c| !c.is_ascii_digit())
-			.take_while(|c| c.is_ascii_digit())
-			.collect::<String>();
-		vol_str.parse::<f32>().ok()
-	} else {
-		None
-	};
-
-	let chapter = if let Some(pos) = num_text.find("Cap.") {
-		let cap_str = num_text[pos + 4..]
-			.chars()
-			.skip_while(|c| !c.is_ascii_digit() && *c != '.')
-			.take_while(|c| c.is_ascii_digit() || *c == '.')
-			.collect::<String>();
-		cap_str.parse::<f32>().ok()
-	} else {
-		let cap_str = num_text
-			.chars()
-			.skip_while(|c| !c.is_ascii_digit() && *c != '.')
-			.take_while(|c| c.is_ascii_digit() || *c == '.')
-			.collect::<String>();
-		cap_str.parse::<f32>().ok()
-	};
-
 	let lower = num_text.to_lowercase();
-	let offset: f32 = if lower.contains("ilust") {
-		0.9
-	} else if lower.contains("posf") || lower.contains("pról") {
-		0.0
+
+	if lower.contains("posfácio") || lower.contains("posf.") {
+		return None;
+	}
+
+	if lower.contains("vol.") {
+		let volume = extract_float_after(&lower, "vol.");
+		let chapter = extract_float_after(&lower, "cap.");
+
+		let ch_base = chapter.unwrap_or(0.0);
+		let is_ilust = lower.contains("ilust");
+		let ch_num = if is_ilust { ch_base + 0.0001 } else { ch_base };
+
+		Some((volume, ch_num, num_text.to_string()))
+	} else if lower.contains("cap.") {
+		let chapter = extract_float_after(&lower, "cap.");
+		chapter.map(|ch| (None, ch, format!("Cap. {}", ch)))
 	} else {
-		0.5
-	};
-
-	let vol = volume.unwrap_or(0.0);
-	let ch = chapter.unwrap_or(if lower.contains("ilust") || lower.contains("posf") || lower.contains("pról") { 9999.0 } else { 0.0 });
-
-	let sort_key = vol * 10000.0 + ch * 10.0 + offset;
-
-	(volume, Some(sort_key))
+		let mut last_num: Option<f32> = None;
+		for part in num_text.split(|c: char| !c.is_ascii_digit() && c != '.') {
+			if let Ok(n) = part.parse::<f32>() {
+				last_num = Some(n);
+			}
+		}
+		last_num.map(|n| (None, n, num_text.to_string()))
+	}
 }
 
 fn get_image_pages(html: &Document) -> Result<Vec<Page>> {
@@ -214,7 +217,7 @@ fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
 		} else {
 			clean
 		};
-		if clean.len() > 50 {
+		if !clean.is_empty() {
 			pages.push(Page {
 				content: PageContent::Text(clean.to_string()),
 				..Default::default()
@@ -352,7 +355,7 @@ impl Source for Tsundoku {
 			}
 		}
 
-				if needs_chapters {
+		if needs_chapters {
 			let mut chapters: Vec<Chapter> = Vec::new();
 			if let Some(items) = html.select("#chapterlist ul li") {
 				for item in items {
@@ -375,19 +378,22 @@ impl Source for Tsundoku {
 						continue;
 					}
 
+					let Some((volume, chapter_number, title)) = parse_chapter_metadata(&num_text) else {
+						continue;
+					};
+
 					let date_text = item
 						.select_first("span.chapterdate")
 						.and_then(|e| e.text())
 						.unwrap_or_default();
 
 					let timestamp = parse_portuguese_date(&date_text);
-					let (vol, sort_key) = parse_chapter_metadata(&num_text);
 
 					chapters.push(Chapter {
 						key: href,
-						volume_number: vol,
-						chapter_number: sort_key,
-						title: Some(num_text),
+						volume_number: volume,
+						chapter_number: Some(chapter_number),
+						title: Some(title),
 						date_uploaded: timestamp,
 						..Default::default()
 					});
@@ -395,10 +401,16 @@ impl Source for Tsundoku {
 			}
 
 			chapters.sort_by(|a, b| {
-				a.chapter_number
-					.unwrap_or(0.0)
-					.partial_cmp(&b.chapter_number.unwrap_or(0.0))
-					.unwrap_or(core::cmp::Ordering::Equal)
+				let a_vol = a.volume_number.unwrap_or(f32::MAX);
+				let b_vol = b.volume_number.unwrap_or(f32::MAX);
+				match b_vol.partial_cmp(&a_vol).unwrap_or(core::cmp::Ordering::Equal) {
+					core::cmp::Ordering::Equal => b
+						.chapter_number
+						.unwrap_or(0.0)
+						.partial_cmp(&a.chapter_number.unwrap_or(0.0))
+						.unwrap_or(core::cmp::Ordering::Equal),
+					ord => ord,
+				}
 			});
 
 			manga.chapters = Some(chapters);
