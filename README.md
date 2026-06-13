@@ -5,15 +5,9 @@ Fontes em português brasileiro para o [Aidoku](https://aidoku.app/), compiladas
 ## Sources
 
 | ID                | Nome      | Idioma |
-| ----------------- | --------- | ------ |
+| ----------------- | --------- | ------ | -------- |
 | `pt-br.mangaflix` | MangaFlix | pt-BR  |
-
-## Sources list
-
-- [ ] taiyo
-- [ ] sakuramangas
-- [ ] arthurscan
-- [ ] ...
+| `pt-br.tsundoku`  | Tsundoku  | pt-BR  | instável |
 
 ## Como usar
 
