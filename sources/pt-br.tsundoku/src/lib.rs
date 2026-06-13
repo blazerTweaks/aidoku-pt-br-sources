@@ -1,6 +1,6 @@
 #![no_std]
 use aidoku::{
-	alloc::{string::{String, ToString}, vec::Vec},
+	alloc::{string::{String, ToString}, vec, vec::Vec},
 	imports::{
 		html::Document,
 		net::Request,
@@ -169,26 +169,6 @@ fn get_image_pages(html: &Document) -> Result<Vec<Page>> {
 }
 
 fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
-	let mut pages: Vec<Page> = Vec::new();
-
-	if let Some(imgs) = html.select("#readerarea img") {
-		let mut has_images = false;
-		for img in imgs {
-			if let Some(src) = img.attr("src") {
-				if !src.is_empty() && !src.contains("readerarea.svg") && !src.contains("apoiar") {
-					pages.push(Page {
-						content: PageContent::Url(src, None),
-						..Default::default()
-					});
-					has_images = true;
-				}
-			}
-		}
-		if has_images {
-			return Ok(pages);
-		}
-	}
-
 	if let Some(content) = html.select_first("#readerarea").and_then(|e| e.text()) {
 		let clean = content.trim();
 		let clean = if let Some(pos) = clean.find("Agradecimentos") {
@@ -196,16 +176,33 @@ fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
 		} else {
 			clean
 		};
-		if !clean.is_empty() {
-			pages.push(Page {
+		if clean.len() > 50 {
+			return Ok(vec![Page {
 				content: PageContent::Text(clean.to_string()),
 				..Default::default()
-			});
-			return Ok(pages);
+			}]);
 		}
 	}
 
-	Err(AidokuError::message("no novel content found"))
+	let mut pages: Vec<Page> = Vec::new();
+	if let Some(imgs) = html.select("#readerarea img") {
+		for img in imgs {
+			if let Some(src) = img.attr("src") {
+				if !src.is_empty() && !src.contains("readerarea.svg") && !src.contains("apoiar") {
+					pages.push(Page {
+						content: PageContent::Url(src, None),
+						..Default::default()
+					});
+				}
+			}
+		}
+	}
+
+	if pages.is_empty() {
+		Err(AidokuError::message("no novel content found"))
+	} else {
+		Ok(pages)
+	}
 }
 
 struct Tsundoku;
@@ -384,7 +381,7 @@ impl Source for Tsundoku {
 		if is_novel {
 			get_novel_pages(&html)
 		} else {
-			get_image_pages(&html)
+			get_image_pages(&html).or_else(|_| get_novel_pages(&html))
 		}
 	}
 }
