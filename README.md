@@ -9,9 +9,14 @@ Fontes em português brasileiro para o [Aidoku](https://aidoku.app/), compiladas
 | `pt-br.mangaflix` | MangaFlix | pt-BR  | ![estável](https://img.shields.io/badge/estável-green)    |
 | `pt-br.tsundoku`  | Tsundoku  | pt-BR  | ![instável](https://img.shields.io/badge/instável-orange) |
 
+## Todo
+
+- [ ] [mangalivre](https://mangalivre.to)
+- [ ] [flowermangas](https://flowermangas.net)
+
 ## Como usar
 
-On a device with Aidoku (0.7+) installed, navigate to the settings tab, and under the source lists page add `https://raw.githubusercontent.com/blazerTweaks/aidoku-pt-br-sources/main/source.json`.
+Em um dispositivo com o Aidoku (0.7+) instalado, acesse a settings e, na página source lists adicione `https://blazertweaks.github.io/aidoku-pt-br-sources/index.min.json`.
 
 ## Disclaimer
 
