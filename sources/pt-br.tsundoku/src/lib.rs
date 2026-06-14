@@ -184,13 +184,23 @@ fn parse_chapter_metadata(num_text: &str) -> Option<(Option<f32>, f32, String)> 
 	}
 }
 
+fn is_content_img(src: &str) -> bool {
+	if src.is_empty() {
+		return false;
+	}
+	if src.contains("readerarea.svg") || src.contains("apoiar") {
+		return false;
+	}
+	src.contains(".wp.com") || src.contains("/wp-content/uploads/")
+}
+
 fn get_image_pages(html: &Document) -> Result<Vec<Page>> {
 	let mut pages: Vec<Page> = Vec::new();
 
 	if let Some(imgs) = html.select("#readerarea img") {
 		for img in imgs {
 			if let Some(src) = img.attr("src") {
-				if !src.is_empty() && !src.contains("readerarea.svg") {
+				if is_content_img(&src) {
 					pages.push(Page {
 						content: PageContent::Url(src, None),
 						..Default::default()
@@ -228,7 +238,7 @@ fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
 	if let Some(imgs) = html.select("#readerarea img") {
 		for img in imgs {
 			if let Some(src) = img.attr("src") {
-				if !src.is_empty() && !src.contains("readerarea.svg") && !src.contains("apoiar") {
+				if is_content_img(&src) {
 					pages.push(Page {
 						content: PageContent::Url(src, None),
 						..Default::default()
