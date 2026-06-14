@@ -84,7 +84,7 @@ fn parse_manga_list(html: &Document) -> Vec<Manga> {
 
 			let cover = item
 				.select_first(".item-thumb img")
-				.and_then(|e| e.attr("src"));
+				.and_then(|e| e.attr("data-src").or_else(|| e.attr("src")));
 
 			let status = item
 				.select_first(".manga-title-badges")
@@ -239,7 +239,7 @@ impl Source for LerMangas {
 
 		if needs_chapters {
 			let mut chapters: Vec<Chapter> = Vec::new();
-			if let Some(items) = html.select("#chapterlist ul li") {
+			if let Some(items) = html.select("li.wp-manga-chapter") {
 				for item in items {
 					let href = item
 						.select_first("a")
@@ -256,12 +256,22 @@ impl Source for LerMangas {
 						.trim()
 						.to_string();
 
+					let num_text = if num_text.is_empty() {
+						item.select_first("a")
+							.and_then(|e| e.text())
+							.unwrap_or_default()
+							.trim()
+							.to_string()
+					} else {
+						num_text
+					};
+
 					if num_text.is_empty() {
 						continue;
 					}
 
 					let date_text = item
-						.select_first("span.chapterdate")
+						.select_first("span.chapter-release-date i, span.chapterdate")
 						.and_then(|e| e.text())
 						.unwrap_or_default();
 

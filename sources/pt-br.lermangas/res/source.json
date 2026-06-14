@@ -2,7 +2,7 @@
 	"info": {
 		"id": "pt-br.lermangas",
 		"name": "Ler Mangas",
-		"version": 1,
+		"version": 2,
 		"url": "https://lermangas.me",
 		"contentRating": 1,
 		"languages": ["pt-BR"],
