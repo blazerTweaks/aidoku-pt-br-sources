@@ -185,13 +185,10 @@ fn parse_chapter_metadata(num_text: &str) -> Option<(Option<f32>, f32, String)> 
 }
 
 fn is_content_img(src: &str) -> bool {
-	if src.is_empty() {
-		return false;
-	}
-	if src.contains("readerarea.svg") || src.contains("apoiar") {
-		return false;
-	}
-	src.contains(".wp.com") || src.contains("/wp-content/uploads/")
+	!src.is_empty()
+		&& !src.contains("readerarea.svg")
+		&& !src.contains("apoiar")
+		&& !src.ends_with(".svg")
 }
 
 fn get_image_pages(html: &Document) -> Result<Vec<Page>> {
@@ -232,26 +229,7 @@ fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
 			}]);
 		}
 	}
-
-	let mut pages: Vec<Page> = Vec::new();
-	if let Some(imgs) = html.select("#readerarea img") {
-		for img in imgs {
-			if let Some(src) = img.attr("src") {
-				if is_content_img(&src) {
-					pages.push(Page {
-						content: PageContent::Url(src, None),
-						..Default::default()
-					});
-				}
-			}
-		}
-	}
-
-	if pages.is_empty() {
-		Err(AidokuError::message("no novel content found"))
-	} else {
-		Ok(pages)
-	}
+	get_image_pages(html)
 }
 
 struct Tsundoku;
@@ -387,6 +365,8 @@ impl Source for Tsundoku {
 						continue;
 					}
 
+					let raw = num_text.clone();
+
 					let Some((volume, chapter_number, title)) = parse_chapter_metadata(&num_text) else {
 						continue;
 					};
@@ -399,13 +379,25 @@ impl Source for Tsundoku {
 					let timestamp = parse_portuguese_date(&date_text);
 
 					chapters.push(Chapter {
-						key: href,
+						key: href.clone(),
 						volume_number: volume,
 						chapter_number: Some(chapter_number),
-						title: Some(title),
+						title: Some(title.clone()),
 						date_uploaded: timestamp,
 						..Default::default()
 					});
+
+					let lower = raw.to_lowercase();
+					if lower.contains("vol.") && !lower.contains("ilust") {
+						chapters.push(Chapter {
+							key: format!("{}#images", href),
+							volume_number: volume,
+							chapter_number: Some(chapter_number + 0.00005),
+							title: Some(format!("{} (Ilust.)", title)),
+							date_uploaded: timestamp,
+							..Default::default()
+						});
+					}
 				}
 			}
 
@@ -430,6 +422,12 @@ impl Source for Tsundoku {
 
 	fn get_page_list(&self, manga: Manga, chapter: Chapter) -> Result<Vec<Page>> {
 		let chapter_url = &chapter.key;
+
+		if let Some(pos) = chapter_url.rfind("#images") {
+			let original_url = &chapter_url[..pos];
+			return get_image_pages(&request(original_url)?.html()?);
+		}
+
 		let html = request(chapter_url)?.html()?;
 
 		let is_novel = manga
