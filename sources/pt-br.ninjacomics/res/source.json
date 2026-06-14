@@ -1,0 +1,16 @@
+{
+	"info": {
+		"id": "pt-br.ninjacomics",
+		"name": "Ninja Comics",
+		"version": 1,
+		"url": "https://ninjacomics.xyz",
+		"contentRating": 1,
+		"languages": ["pt-BR"],
+		"nsfw": 0
+	},
+	"listings": [
+		{ "id": "latest", "name": "Últimos" },
+		{ "id": "popular", "name": "Populares" },
+		{ "id": "new", "name": "Novos" }
+	]
+}

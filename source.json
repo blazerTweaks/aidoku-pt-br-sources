@@ -4,9 +4,9 @@
 		{
 			"id": "pt-br.mangaflix",
 			"name": "MangaFlix",
-			"version": 3,
-			"iconURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/icons/pt-br.mangaflix.png",
-			"downloadURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/sources/pt-br.mangaflix.aix",
+			"version": 4,
+			"iconURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/icons/pt-br.mangaflix-v4.png",
+			"downloadURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/sources/pt-br.mangaflix-v4.aix",
 			"languages": ["pt-BR"],
 			"contentRating": 1,
 			"baseURL": "https://mangaflix.net"
@@ -14,12 +14,22 @@
 		{
 			"id": "pt-br.tsundoku",
 			"name": "Tsundoku",
-			"version": 1,
-			"iconURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/icons/pt-br.tsundoku.png",
-			"downloadURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/sources/pt-br.tsundoku.aix",
+			"version": 8,
+			"iconURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/icons/pt-br.tsundoku-v8.png",
+			"downloadURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/sources/pt-br.tsundoku-v8.aix",
 			"languages": ["pt-BR"],
 			"contentRating": 1,
 			"baseURL": "https://tsundoku.com.br"
+		},
+		{
+			"id": "pt-br.ninjacomics",
+			"name": "Ninja Comics",
+			"version": 1,
+			"iconURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/icons/pt-br.ninjacomics-v1.png",
+			"downloadURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/sources/pt-br.ninjacomics-v1.aix",
+			"languages": ["pt-BR"],
+			"contentRating": 1,
+			"baseURL": "https://ninjacomics.xyz"
 		}
 	]
 }
