@@ -1,6 +1,6 @@
 #![no_std]
 use aidoku::{
-	alloc::{string::{String, ToString}, vec::Vec},
+	alloc::{string::{String, ToString}, vec, vec::Vec},
 	imports::{
 		html::Document,
 		net::Request,
@@ -218,8 +218,6 @@ fn get_image_pages(html: &Document) -> Result<Vec<Page>> {
 }
 
 fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
-	let mut pages: Vec<Page> = Vec::new();
-
 	if let Some(content) = html.select_first("#readerarea").and_then(|e| e.text()) {
 		let clean = content.trim();
 		let clean = if let Some(pos) = clean.find("Agradecimentos") {
@@ -227,14 +225,15 @@ fn get_novel_pages(html: &Document) -> Result<Vec<Page>> {
 		} else {
 			clean
 		};
-		if !clean.is_empty() {
-			pages.push(Page {
+		if clean.len() > 50 {
+			return Ok(vec![Page {
 				content: PageContent::Text(clean.to_string()),
 				..Default::default()
-			});
+			}]);
 		}
 	}
 
+	let mut pages: Vec<Page> = Vec::new();
 	if let Some(imgs) = html.select("#readerarea img") {
 		for img in imgs {
 			if let Some(src) = img.attr("src") {
