@@ -30,6 +30,16 @@
 			"languages": ["pt-BR"],
 			"contentRating": 1,
 			"baseURL": "https://ninjacomics.xyz"
+		},
+		{
+			"id": "pt-br.lermangas",
+			"name": "Ler Mangas",
+			"version": 1,
+			"iconURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/icons/pt-br.lermangas-v1.png",
+			"downloadURL": "https://blazertweaks.github.io/aidoku-pt-br-sources/sources/pt-br.lermangas-v1.aix",
+			"languages": ["pt-BR"],
+			"contentRating": 1,
+			"baseURL": "https://lermangas.me"
 		}
 	]
 }
