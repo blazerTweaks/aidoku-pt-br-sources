@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Aidoku PT-BR Sources</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.3.2/css/flag-icons.min.css"
+    />
+  </head>
+  <body>
+    <div class="social">
+      <a
+        href="https://github.com/BlazerTweaks/aidoku-pt-br-sources"
+        target="_blank"
+        aria-label="GitHub"
+      >
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+          <path
+            d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5c.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34c-.46-1.16-1.11-1.47-1.11-1.47c-.91-.62.07-.6.07-.6c1 .07 1.53 1.03 1.53 1.03c.87 1.52 2.34 1.07 2.91.83c.09-.65.35-1.09.63-1.34c-2.22-.25-4.55-1.11-4.55-4.92c0-1.11.38-2 1.03-2.71c-.1-.25-.45-1.29.1-2.64c0 0 .84-.27 2.75 1.02c.8-.22 1.65-.33 2.5-.33c.85 0 1.7.11 2.5.33c1.91-1.29 2.75-1.02 2.75-1.02c.55 1.35.2 2.39.1 2.64c.65.71 1.03 1.6 1.03 2.71c0 3.82-2.34 4.66-4.57 4.91c.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2"
+          />
+        </svg>
+      </a>
+    </div>
+    <header>
+      <h1>Aidoku PT-BR Sources</h1>
+      <p>
+        Lista de fontes para o Aidoku em Português do Brasil
+        <span class="flag fi fi-br"></span>
+      </p>
+    </header>
+    <main>
+      <p class="info">
+        Adicione esse repositório dentro da lista de fontes do Aidoku na aba
+        <strong>settings</strong> e, na página <strong>source lists</strong>,
+        insira:
+        <code
+          >https://blazertweaks.github.io/aidoku-pt-br-sources/index.min.json</code
+        >
+      </p>
+      <div class="container">
+        <label for="search">Search</label>
+        <input
+          type="text"
+          id="search"
+          placeholder="Search sources"
+          autocomplete="off"
+          oninput="filterSources()"
+        />
+      </div>
+      <div id="source-list">
+        <div class="source-header">
+          <h2>Sources</h2>
+          <span class="source-count"></span>
+        </div>
+        <ul>
+          <li>
+            <img src="icons/pt-br.mangaflix-v4.png" alt="MangaFlix" />
+            <div>
+              <span class="source-name">
+                MangaFlix
+                <span class="source-version">v4</span>
+                <span class="badge badge-17">17+</span>
+              </span>
+              <a class="source-url" href="https://mangaflix.net" target="_blank"
+                >https://mangaflix.net</a
+              >
+            </div>
+            <a
+              class="download-btn"
+              href="sources/pt-br.mangaflix-v4.aix"
+              download
+              aria-label="Download MangaFlix-v4.aix"
+              title="Download MangaFlix-v4.aix"
+            >
+              <i data-lucide="download"></i>
+            </a>
+          </li>
+          <li>
+            <img src="icons/pt-br.tsundoku-v8.png" alt="Tsundoku" />
+            <div>
+              <span class="source-name">
+                Tsundoku
+                <span class="source-version">v8</span>
+                <span class="badge badge-17">17+</span>
+              </span>
+              <a
+                class="source-url"
+                href="https://tsundoku.com.br"
+                target="_blank"
+                >https://tsundoku.com.br</a
+              >
+            </div>
+            <a
+              class="download-btn"
+              href="sources/pt-br.tsundoku-v8.aix"
+              download
+              aria-label="Download Tsundoku-v8.aix"
+              title="Download Tsundoku-v8.aix"
+            >
+              <i data-lucide="download"></i>
+            </a>
+          </li>
+          <li>
+            <img src="icons/pt-br.ninjacomics-v2.png" alt="Ninja Comics" />
+            <div>
+              <span class="source-name">
+                Ninja Comics
+                <span class="source-version">v2</span>
+                <span class="badge badge-17">17+</span>
+              </span>
+              <a
+                class="source-url"
+                href="https://ninjacomics.xyz"
+                target="_blank"
+                >https://ninjacomics.xyz</a
+              >
+            </div>
+            <a
+              class="download-btn"
+              href="sources/pt-br.ninjacomics-v2.aix"
+              download
+              aria-label="Download NinjaComics-v2.aix"
+              title="Download NinjaComics-v2.aix"
+            >
+              <i data-lucide="download"></i>
+            </a>
+          </li>
+          <li>
+            <img src="icons/pt-br.lermangas-v2.png" alt="Ler Mangas" />
+            <div>
+              <span class="source-name">
+                Ler Mangas
+                <span class="source-version">v2</span>
+                <span class="badge badge-17">17+</span>
+              </span>
+              <a
+                class="source-url"
+                href="https://lermangas.me"
+                target="_blank"
+                >https://lermangas.me</a
+              >
+            </div>
+            <a
+              class="download-btn"
+              href="sources/pt-br.lermangas-v2.aix"
+              download
+              aria-label="Download LerMangas-v2.aix"
+              title="Download LerMangas-v2.aix"
+            >
+              <i data-lucide="download"></i>
+            </a>
+          </li>
+        </ul>
+        <div class="empty" id="empty">
+          <i data-lucide="search-x"></i>
+          <p>Nenhuma fonte encontrada</p>
+        </div>
+      </div>
+    </main>
+    <script src="script.js"></script>
+  </body>
+</html>

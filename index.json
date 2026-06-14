@@ -1,0 +1,53 @@
+{
+  "name": "Aidoku PT-BR Sources",
+  "sources": [
+    {
+      "id": "pt-br.lermangas",
+      "name": "Ler Mangas",
+      "version": 2,
+      "iconURL": "icons/pt-br.lermangas-v2.png",
+      "downloadURL": "sources/pt-br.lermangas-v2.aix",
+      "languages": [
+        "pt-BR"
+      ],
+      "contentRating": 1,
+      "baseURL": "https://lermangas.me"
+    },
+    {
+      "id": "pt-br.mangaflix",
+      "name": "MangaFlix",
+      "version": 4,
+      "iconURL": "icons/pt-br.mangaflix-v4.png",
+      "downloadURL": "sources/pt-br.mangaflix-v4.aix",
+      "languages": [
+        "pt-BR"
+      ],
+      "contentRating": 1,
+      "baseURL": "https://mangaflix.net"
+    },
+    {
+      "id": "pt-br.ninjacomics",
+      "name": "Ninja Comics",
+      "version": 2,
+      "iconURL": "icons/pt-br.ninjacomics-v2.png",
+      "downloadURL": "sources/pt-br.ninjacomics-v2.aix",
+      "languages": [
+        "pt-BR"
+      ],
+      "contentRating": 1,
+      "baseURL": "https://ninjacomics.xyz"
+    },
+    {
+      "id": "pt-br.tsundoku",
+      "name": "Tsundoku",
+      "version": 8,
+      "iconURL": "icons/pt-br.tsundoku-v8.png",
+      "downloadURL": "sources/pt-br.tsundoku-v8.aix",
+      "languages": [
+        "pt-BR"
+      ],
+      "contentRating": 1,
+      "baseURL": "https://tsundoku.com.br"
+    }
+  ]
+}
