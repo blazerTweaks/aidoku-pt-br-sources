@@ -8,7 +8,7 @@ Fontes em português brasileiro para o [Aidoku](https://aidoku.app/), compiladas
 | ------------------- | ------------ | ------ | -------------------------------------------------------------- |
 | `pt-br.mangaflix`   | MangaFlix    | pt-BR  | ![estável](https://img.shields.io/badge/estável-green)         |
 | `pt-br.tsundoku`    | Tsundoku     | pt-BR  | ![instável](https://img.shields.io/badge/instável-orange)      |
-| `pt-br.ninjacomics` | Ninja Comics | pt-BR  | ![instável](https://img.shields.io/badge/instável-orange)      |
+| `pt-br.ninjacomics` | Ninja Comics | pt-BR  | ![indisponível](https://img.shields.io/badge/indisponível-red) |
 | `pt-br.lermangas`   | Ler Mangas   | pt-BR  | ![indisponível](https://img.shields.io/badge/indisponível-red) |
 
 ## Como usar
