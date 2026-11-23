@@ -1,0 +1,9 @@
+# Normaliza texto como LF no repositório e no checkout (evita avisos LF/CRLF no Windows).
+* text=auto eol=lf
+
+# Binários
+*.png binary
+*.jpg binary
+*.ico binary
+*.aix binary
+*.wasm binary
