@@ -8,7 +8,7 @@ function filterSources() {
   let visible = 0;
 
   items.forEach((item) => {
-    const name = item.querySelector(".source-name").textContent.toLowerCase();
+    const name = (item.querySelector("img")?.alt || "").toLowerCase();
     const url = item.querySelector(".source-url").textContent.toLowerCase();
     const match = name.includes(query) || url.includes(query);
     item.style.display = match ? "" : "none";

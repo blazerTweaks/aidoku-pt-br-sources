@@ -16,16 +16,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions-rs/toolchain@v1
+      - uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
-          override: true
-          target: wasm32-unknown-unknown
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: |
+            sources/pt-br.lermangas
+            sources/pt-br.mangaflix
+            sources/pt-br.ninjacomics
+            sources/pt-br.tsundoku
+      - name: Cache aidoku-cli
+        id: cache-aidoku
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin/aidoku
+          key: aidoku-cli-${{ runner.os }}-v1
       - name: Install aidoku-cli
-        run: |
-          if ! command -v aidoku >/dev/null 2>&1; then
-            cargo install --git https://github.com/Aidoku/aidoku-rs aidoku-cli
-          fi
+        if: steps.cache-aidoku.outputs.cache-hit != 'true'
+        run: cargo install --locked --git https://github.com/Aidoku/aidoku-rs aidoku-cli
       - name: Build sources
         run: |
           for src in ./sources/*; do

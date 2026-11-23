@@ -1,10 +1,11 @@
 #![no_std]
 use aidoku::{
 	alloc::{string::String, vec::Vec},
+	helpers::uri::encode_uri_component,
 	imports::net::Request,
 	imports::std::parse_date,
 	prelude::*,
-	AidokuError, Chapter, DeepLinkHandler, DeepLinkResult, FilterValue, Listing, ListingProvider,
+	Chapter, DeepLinkHandler, DeepLinkResult, FilterValue, Listing, ListingProvider,
 	Manga, MangaPageResult, MangaStatus, Page, PageContent, Result, Source,
 };
 use serde::Deserialize;
@@ -38,17 +39,17 @@ struct PosterData {
 }
 
 #[derive(Deserialize)]
-struct BrowseResponse {
-	data: Vec<CategoryData>,
+struct SearchResponse {
+	data: SearchData,
 }
 
 #[derive(Deserialize)]
-struct CategoryData {
-	items: Vec<BrowseItem>,
+struct SearchData {
+	works: Vec<SearchItem>,
 }
 
 #[derive(Deserialize)]
-struct BrowseItem {
+struct SearchItem {
 	_id: String,
 	name: String,
 	poster: Option<PosterData>,
@@ -100,34 +101,35 @@ impl Source for MangaFlix {
 		page: i32,
 		_filters: Vec<FilterValue>,
 	) -> Result<MangaPageResult> {
-		if let Some(q) = query {
-			let q_lower = q.to_lowercase();
-			let url = format!("{}/v1/browse", API_URL);
+		if let Some(q) = query.filter(|q| !q.trim().is_empty()) {
+			// Endpoint de busca real da API (máx. ~30 resultados, sem paginação).
+			if page > 1 {
+				return Ok(MangaPageResult {
+					entries: Vec::new(),
+					has_next_page: false,
+				});
+			}
+			let url = format!(
+				"{}/v1/search/mangas?query={}",
+				API_URL,
+				encode_uri_component(q.trim())
+			);
 			let response = request(&url)?.send()?;
-			let data: BrowseResponse = response.get_json_owned()?;
+			let data: SearchResponse = response.get_json_owned()?;
 
 			let mut entries: Vec<Manga> = Vec::new();
-			let mut seen_ids: Vec<String> = Vec::new();
-
-			for category in data.data {
-				for item in category.items {
-					if !item.name.to_lowercase().contains(&q_lower) {
-						continue;
-					}
-					if seen_ids.iter().any(|id| *id == item._id) {
-						continue;
-					}
-					seen_ids.push(item._id.clone());
-
-					let cover = item.poster.and_then(|p| p.default_url);
-					entries.push(Manga {
-						key: item._id.clone(),
-						title: item.name,
-						cover,
-						url: Some(format!("{}/br/manga/{}", BASE_URL, &item._id)),
-						..Default::default()
-					});
+			for item in data.data.works {
+				if entries.iter().any(|m| m.key == item._id) {
+					continue;
 				}
+				let cover = item.poster.and_then(|p| p.default_url);
+				entries.push(Manga {
+					url: Some(format!("{}/br/manga/{}", BASE_URL, &item._id)),
+					key: item._id,
+					title: item.name,
+					cover,
+					..Default::default()
+				});
 			}
 
 			return Ok(MangaPageResult {
@@ -137,28 +139,22 @@ impl Source for MangaFlix {
 		}
 
 		let url = format!("{}/br/browse?page={}", BASE_URL, page);
-		println!("[MangaFlix] get_search_manga_list url={} page={}", url, page);
-
-		let html = match request(&url) {
-			Ok(req) => match req.html() {
-				Ok(doc) => doc,
-				Err(e) => {
-					println!("[MangaFlix] html() error: {:?}", e);
-					return Err(AidokuError::message(format!("html error: {:?}", e)));
-				}
-			},
-			Err(e) => {
-				println!("[MangaFlix] request() error: {:?}", e);
-				return Err(AidokuError::message(format!("request error: {:?}", e)));
-			}
-		};
+		let html = request(&url)?.html()?;
 
 		let mut entries: Vec<Manga> = Vec::new();
 		if let Some(cards) = html.select("a[href^='/br/manga/']") {
 			for card in cards {
 				let href = card.attr("href").unwrap_or_default();
-				let key = href.rsplit('/').next().map(String::from).unwrap_or_default();
-				if key.is_empty() {
+				let key = href
+					.split(['?', '#'])
+					.next()
+					.unwrap_or_default()
+					.trim_end_matches('/')
+					.rsplit('/')
+					.next()
+					.map(String::from)
+					.unwrap_or_default();
+				if key.is_empty() || entries.iter().any(|m| m.key == key) {
 					continue;
 				}
 
@@ -185,7 +181,6 @@ impl Source for MangaFlix {
 		}
 
 		let has_next_page = entries.len() >= 20;
-		println!("[MangaFlix] browse found {} entries, has_next={}", entries.len(), has_next_page);
 
 		Ok(MangaPageResult {
 			entries,
@@ -208,7 +203,8 @@ impl Source for MangaFlix {
 			manga.title = manga_data.name;
 			manga.description = manga_data.description;
 			manga.cover = manga_data.poster.and_then(|p| p.default_url);
-			manga.status = MangaStatus::Ongoing;
+			// A API não expõe o status da obra.
+			manga.status = MangaStatus::Unknown;
 			manga.url = Some(format!("{}/br/manga/{}", BASE_URL, &manga.key));
 
 			let mut tags: Vec<String> = Vec::new();
@@ -285,12 +281,15 @@ impl ListingProvider for MangaFlix {
 
 impl DeepLinkHandler for MangaFlix {
 	fn handle_deep_link(&self, url: String) -> Result<Option<DeepLinkResult>> {
-		if url.contains("/br/manga/") {
-			let key = url.rsplit('/').next().map(String::from).unwrap_or_default();
-			Ok(Some(DeepLinkResult::Manga { key }))
-		} else {
-			Ok(None)
-		}
+		let path = url.split(['?', '#']).next().unwrap_or_default();
+		let Some(pos) = path.find("/br/manga/") else {
+			return Ok(None);
+		};
+		let key = path[pos + "/br/manga/".len()..]
+			.split('/')
+			.find(|s| !s.is_empty())
+			.map(String::from);
+		Ok(key.map(|key| DeepLinkResult::Manga { key }))
 	}
 }
 

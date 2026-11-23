@@ -2,11 +2,10 @@
 	"info": {
 		"id": "pt-br.lermangas",
 		"name": "Ler Mangas",
-		"version": 2,
+		"version": 3,
 		"url": "https://lermangas.me",
 		"contentRating": 1,
-		"languages": ["pt-BR"],
-		"nsfw": 0
+		"languages": ["pt-BR"]
 	},
 	"listings": [
 		{ "id": "latest", "name": "Últimos" },

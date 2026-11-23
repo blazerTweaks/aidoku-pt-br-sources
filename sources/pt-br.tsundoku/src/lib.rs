@@ -1,10 +1,11 @@
 #![no_std]
 use aidoku::{
 	alloc::{string::{String, ToString}, vec, vec::Vec},
+	helpers::uri::encode_uri_component,
 	imports::{
-		html::Document,
+		html::{Document, Element},
 		net::Request,
-		std::parse_date,
+		std::{current_date, parse_date},
 	},
 	prelude::*,
 	AidokuError, Chapter, DeepLinkHandler, DeepLinkResult, FilterValue, Listing, ListingProvider,
@@ -47,7 +48,7 @@ fn parse_manga_list(html: &Document) -> Vec<Manga> {
 
 			let cover = card
 				.select_first(".limit img")
-				.and_then(|e| e.attr("src"));
+				.and_then(|e| image_url(&e));
 
 			let manga_type = card
 				.select_first(".limit .typename, .limit .novelabel")
@@ -70,7 +71,7 @@ fn parse_manga_list(html: &Document) -> Vec<Manga> {
 			};
 
 			let url_with_type = if !manga_type.is_empty() {
-				format!("{}/manga/{}/?type={}", BASE_URL, slug, manga_type)
+				format!("{}/manga/{}/?type={}", BASE_URL, slug, encode_uri_component(&manga_type))
 			} else {
 				format!("{}/manga/{}/", BASE_URL, slug)
 			};
@@ -88,47 +89,150 @@ fn parse_manga_list(html: &Document) -> Vec<Manga> {
 	entries
 }
 
-fn parse_portuguese_date(date_str: &str) -> Option<i64> {
-	let date_str = date_str.trim();
-	if date_str.is_empty() {
-		return None;
+fn absolute_url(url: &str) -> String {
+	let url = url.trim();
+	if url.starts_with("//") {
+		format!("https:{}", url)
+	} else if url.starts_with('/') {
+		format!("{}{}", BASE_URL, url)
+	} else {
+		url.to_string()
 	}
+}
 
-	let months = [
-		("janeiro", "01"),
-		("fevereiro", "02"),
-		("março", "03"),
-		("abril", "04"),
-		("maio", "05"),
-		("junho", "06"),
-		("julho", "07"),
-		("agosto", "08"),
-		("setembro", "09"),
-		("outubro", "10"),
-		("novembro", "11"),
-		("dezembro", "12"),
-	];
-
-	let lower = date_str.to_lowercase();
-	for (pt_name, num) in &months {
-		if lower.contains(pt_name) {
-			let normalized = lower.replace(pt_name, num);
-			let parts: Vec<&str> = normalized
-				.split(|c| c == ' ' || c == ',')
-				.filter(|s| !s.is_empty())
-				.collect();
-			if parts.len() >= 3 {
-				// Formato esperado: "janeiro 6, 2026" → replace → "01 6, 2026" → parts = ["01", "6", "2026"]
-				let d = parts[1];
-				let m = num;
-				let y = parts[2];
-				let formatted = format!("{}-{}-{}", y, m, d);
-				return parse_date(&formatted, "yyyy-MM-dd");
+/// Lê a URL de uma imagem considerando lazy-load e espaços dentro do atributo.
+fn image_url(el: &Element) -> Option<String> {
+	for attr in ["data-src", "data-lazy-src", "data-cfsrc", "src"] {
+		if let Some(value) = el.attr(attr) {
+			let value = value.trim();
+			if !value.is_empty() && !value.starts_with("data:") {
+				return Some(absolute_url(value));
 			}
 		}
 	}
+	None
+}
 
-	parse_date(date_str, "MMMM d, yyyy")
+/// Primeiro número (aceita `.` ou `,` decimal) encontrado no texto.
+fn first_number(text: &str) -> Option<f32> {
+	let mut num = String::new();
+	for c in text.chars() {
+		if c.is_ascii_digit() {
+			num.push(c);
+		} else if (c == '.' || c == ',') && !num.is_empty() && !num.contains('.') {
+			num.push('.');
+		} else if !num.is_empty() {
+			break;
+		}
+	}
+	num.trim_end_matches('.').parse::<f32>().ok()
+}
+
+/// Número do capítulo: prioriza o número logo após "capítulo"/"cap"/"chapter".
+fn parse_chapter_number(text: &str) -> Option<f32> {
+	let lower = text.to_lowercase();
+	for key in ["capítulo", "capitulo", "cap.", "cap", "chapter", "ch."] {
+		if let Some(pos) = lower.find(key) {
+			if let Some(n) = first_number(&lower[pos + key.len()..]) {
+				return Some(n);
+			}
+		}
+	}
+	first_number(&lower)
+}
+
+const MONTHS: [(&str, u32); 19] = [
+	("jan", 1), ("fev", 2), ("feb", 2), ("mar", 3), ("abr", 4), ("apr", 4),
+	("mai", 5), ("may", 5), ("jun", 6), ("jul", 7), ("ago", 8), ("aug", 8),
+	("set", 9), ("sep", 9), ("out", 10), ("oct", 10), ("nov", 11), ("dez", 12), ("dec", 12),
+];
+
+/// Datas absolutas: "janeiro 6, 2026", "6 de janeiro de 2026", "06/01/2026", "2026-01-06".
+fn parse_absolute_date(s: &str) -> Option<i64> {
+	let mut month: Option<u32> = None;
+	let mut numbers: Vec<&str> = Vec::new();
+	for token in s.split(|c: char| !c.is_alphanumeric()).filter(|t| !t.is_empty()) {
+		if token.chars().all(|c| c.is_ascii_digit()) {
+			numbers.push(token);
+		} else if month.is_none() {
+			month = MONTHS
+				.iter()
+				.find(|(prefix, _)| token.starts_with(prefix))
+				.map(|(_, m)| *m);
+		}
+	}
+
+	let (y, m, d) = if let Some(m) = month {
+		let year = numbers.iter().find(|n| n.len() == 4)?;
+		let day = numbers.iter().find(|n| n.len() <= 2)?;
+		(year.parse::<u32>().ok()?, m, day.parse::<u32>().ok()?)
+	} else if numbers.len() >= 3 {
+		if numbers[0].len() == 4 {
+			(numbers[0].parse().ok()?, numbers[1].parse().ok()?, numbers[2].parse().ok()?)
+		} else if numbers[2].len() == 4 {
+			(numbers[2].parse().ok()?, numbers[1].parse().ok()?, numbers[0].parse().ok()?)
+		} else {
+			return None;
+		}
+	} else {
+		return None;
+	};
+
+	if !(1..=12).contains(&m) || !(1..=31).contains(&d) {
+		return None;
+	}
+	parse_date(format!("{:04}-{:02}-{:02}", y, m, d), "yyyy-MM-dd")
+}
+
+/// Datas relativas: "há 2 dias", "3 horas atrás", "ontem", "2 days ago".
+fn parse_relative_date(s: &str) -> Option<i64> {
+	let now = current_date();
+	if s.contains("hoje") || s.contains("agora") || s.contains("today") || s.contains("just now") {
+		return Some(now);
+	}
+	if s.contains("ontem") || s.contains("yesterday") {
+		return Some(now - 86_400);
+	}
+	let amount: i64 = match first_number(s) {
+		Some(n) => n as i64,
+		None if s.contains(" um ") || s.contains(" uma ") || s.starts_with("um ") || s.starts_with("uma ") || s.contains(" an ") || s.contains(" a ") => 1,
+		None => return None,
+	};
+	let unit: i64 = if s.contains("seg") || s.contains("sec") {
+		1
+	} else if s.contains("min") {
+		60
+	} else if s.contains("hora") || s.contains("hour") {
+		3_600
+	} else if s.contains("dia") || s.contains("day") {
+		86_400
+	} else if s.contains("semana") || s.contains("week") {
+		604_800
+	} else if s.contains("mês") || s.contains("mes") || s.contains("month") {
+		2_592_000
+	} else if s.contains("ano") || s.contains("year") {
+		31_536_000
+	} else {
+		return None;
+	};
+	Some(now - amount * unit)
+}
+
+fn parse_portuguese_date(text: &str) -> Option<i64> {
+	let s = text.trim().to_lowercase();
+	if s.is_empty() {
+		return None;
+	}
+	parse_absolute_date(&s).or_else(|| parse_relative_date(&s))
+}
+
+fn has_next_page(html: &Document) -> bool {
+	html.select_first(".hpage a.r, .pagination a.next, a.next.page-numbers")
+		.is_some()
+}
+
+fn is_novel_url(url: &str) -> bool {
+	url.to_lowercase().contains("type=") && url.to_lowercase().contains("novel")
 }
 
 fn extract_float_after(text: &str, prefix: &str) -> Option<f32> {
@@ -174,13 +278,7 @@ fn parse_chapter_metadata(num_text: &str) -> Option<(Option<f32>, f32, String)> 
 		let chapter = extract_float_after(&lower, "cap.");
 		chapter.map(|ch| (None, ch, format!("Cap. {}", ch)))
 	} else {
-		let mut last_num: Option<f32> = None;
-		for part in num_text.split(|c: char| !c.is_ascii_digit() && c != '.') {
-			if let Ok(n) = part.parse::<f32>() {
-				last_num = Some(n);
-			}
-		}
-		last_num.map(|n| (None, n, num_text.to_string()))
+		parse_chapter_number(num_text).map(|n| (None, n, num_text.to_string()))
 	}
 }
 
@@ -196,7 +294,7 @@ fn get_image_pages(html: &Document) -> Result<Vec<Page>> {
 
 	if let Some(imgs) = html.select("#readerarea img") {
 		for img in imgs {
-			if let Some(src) = img.attr("src") {
+			if let Some(src) = image_url(&img) {
 				if is_content_img(&src) {
 					pages.push(Page {
 						content: PageContent::Url(src, None),
@@ -242,23 +340,33 @@ impl Source for Tsundoku {
 	fn get_search_manga_list(
 		&self,
 		query: Option<String>,
-		_page: i32,
+		page: i32,
 		_filters: Vec<FilterValue>,
 	) -> Result<MangaPageResult> {
-		if let Some(q) = query {
-			let url = format!("{}/?s={}", BASE_URL, q);
-			let html = request(&url)?.html()?;
-			let entries = parse_manga_list(&html);
-			Ok(MangaPageResult {
-				entries,
-				has_next_page: false,
-			})
-		} else {
-			Ok(MangaPageResult {
+		let Some(q) = query.filter(|q| !q.trim().is_empty()) else {
+			return Ok(MangaPageResult {
 				entries: Vec::new(),
 				has_next_page: false,
-			})
-		}
+			});
+		};
+		let page_path = if page > 1 { format!("/page/{}", page) } else { String::new() };
+		let url = format!("{}{}/?s={}", BASE_URL, page_path, encode_uri_component(q.trim()));
+		let html = match request(&url)?.html() {
+			Ok(html) => html,
+			Err(_) if page > 1 => {
+				return Ok(MangaPageResult {
+					entries: Vec::new(),
+					has_next_page: false,
+				});
+			}
+			Err(e) => return Err(e.into()),
+		};
+		let entries = parse_manga_list(&html);
+		let has_next_page = !entries.is_empty() && has_next_page(&html);
+		Ok(MangaPageResult {
+			entries,
+			has_next_page,
+		})
 	}
 
 	fn get_manga_update(
@@ -298,7 +406,7 @@ impl Source for Tsundoku {
 
 			if let Some(cover) = html
 				.select_first("div.thumb img")
-				.and_then(|e| e.attr("src"))
+				.and_then(|e| image_url(&e))
 			{
 				manga.cover = Some(cover);
 			}
@@ -338,7 +446,7 @@ impl Source for Tsundoku {
 			}
 
 			if !manga_type.is_empty() {
-				manga.url = Some(format!("{}?type={}", url, manga_type));
+				manga.url = Some(format!("{}?type={}", url, encode_uri_component(&manga_type)));
 			}
 		}
 
@@ -430,10 +538,7 @@ impl Source for Tsundoku {
 
 		let html = request(chapter_url)?.html()?;
 
-		let is_novel = manga
-			.url
-			.as_ref()
-			.map_or(false, |u| u.contains("?type=Novel"));
+		let is_novel = manga.url.as_deref().is_some_and(is_novel_url);
 
 		if is_novel {
 			get_novel_pages(&html)
@@ -444,40 +549,54 @@ impl Source for Tsundoku {
 }
 
 impl ListingProvider for Tsundoku {
-	fn get_manga_list(&self, listing: Listing, _page: i32) -> Result<MangaPageResult> {
-		// listing.id é String diretamente (não Option<String>)
+	fn get_manga_list(&self, listing: Listing, page: i32) -> Result<MangaPageResult> {
 		let listing_id = listing.id.as_str();
+		let paths: Vec<&str> = if listing_id == "todos" {
+			CATEGORIES.iter().map(|(_, path)| *path).collect()
+		} else {
+			vec![CATEGORIES
+				.iter()
+				.find(|(id, _)| *id == listing_id)
+				.map(|(_, path)| *path)
+				.unwrap_or("/mangas/")]
+		};
 
 		let mut all_entries: Vec<Manga> = Vec::new();
-		let mut seen_keys: Vec<String> = Vec::new();
+		let mut has_next = false;
+		let mut last_error: Option<AidokuError> = None;
+		let mut any_ok = false;
 
-		if listing_id == "todos" {
-			for (_name, path) in CATEGORIES {
-				let url = format!("{}{}", BASE_URL, path);
-				if let Ok(html) = request(&url).and_then(|r| r.html().map_err(Into::into)) {
+		for path in paths {
+			let url = if page > 1 {
+				format!("{}{}page/{}/", BASE_URL, path, page)
+			} else {
+				format!("{}{}", BASE_URL, path)
+			};
+			match request(&url).and_then(|r| r.html()) {
+				Ok(html) => {
+					any_ok = true;
+					has_next |= has_next_page(&html);
 					for manga in parse_manga_list(&html) {
-						if !seen_keys.contains(&manga.key) {
-							seen_keys.push(manga.key.clone());
+						if !all_entries.iter().any(|m| m.key == manga.key) {
 							all_entries.push(manga);
 						}
 					}
 				}
+				Err(e) => last_error = Some(e.into()),
 			}
-		} else {
-			let path = CATEGORIES
-				.iter()
-				.find(|(id, _)| *id == listing_id)
-				.map(|(_, path)| *path)
-				.unwrap_or("/mangas/");
-			let url = format!("{}{}", BASE_URL, path);
-			if let Ok(html) = request(&url).and_then(|r| r.html().map_err(Into::into)) {
-				all_entries = parse_manga_list(&html);
+		}
+
+		// Só propaga o erro (ex.: Cloudflare) se nenhuma categoria carregou na 1ª página;
+		// em páginas seguintes, falha = fim da paginação.
+		if !any_ok && page <= 1 {
+			if let Some(e) = last_error {
+				return Err(e);
 			}
 		}
 
 		Ok(MangaPageResult {
+			has_next_page: has_next && !all_entries.is_empty(),
 			entries: all_entries,
-			has_next_page: false,
 		})
 	}
 }
@@ -485,7 +604,7 @@ impl ListingProvider for Tsundoku {
 impl DeepLinkHandler for Tsundoku {
 	fn handle_deep_link(&self, url: String) -> Result<Option<DeepLinkResult>> {
 		if url.contains("/manga/") {
-			let clean = url.split('?').next().unwrap_or(&url).trim_end_matches('/');
+			let clean = url.split(['?', '#']).next().unwrap_or(&url).trim_end_matches('/');
 			let key = clean.rsplit('/').next().map(String::from).unwrap_or_default();
 			if !key.is_empty() {
 				return Ok(Some(DeepLinkResult::Manga { key }));
