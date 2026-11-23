@@ -4,12 +4,17 @@ Fontes em português brasileiro para o [Aidoku](https://aidoku.app/), compiladas
 
 ## Sources
 
-| ID                  | Nome         | Idioma | Status                                                         |
-| ------------------- | ------------ | ------ | -------------------------------------------------------------- |
-| `pt-br.mangaflix`   | MangaFlix    | pt-BR  | ![estável](https://img.shields.io/badge/estável-green)         |
-| `pt-br.tsundoku`    | Tsundoku     | pt-BR  | ![instável](https://img.shields.io/badge/instável-orange)      |
-| `pt-br.ninjacomics` | Ninja Comics | pt-BR  | ![indisponível](https://img.shields.io/badge/indisponível-red) |
-| `pt-br.lermangas`   | Ler Mangas   | pt-BR  | ![indisponível](https://img.shields.io/badge/indisponível-red) |
+| ID                  | Nome         | Versão | Idioma | Status                                                         |
+| ------------------- | ------------ | ------ | ------ | -------------------------------------------------------------- |
+| `pt-br.mangaflix`   | MangaFlix    | v5     | pt-BR  | ![estável](https://img.shields.io/badge/estável-green)         |
+| `pt-br.tsundoku`    | Tsundoku     | v9     | pt-BR  | ![em teste](https://img.shields.io/badge/em%20teste-yellow)    |
+| `pt-br.ninjacomics` | Ninja Comics | v3     | pt-BR  | ![em teste](https://img.shields.io/badge/em%20teste-yellow)    |
+| `pt-br.lermangas`   | Ler Mangas   | v3     | pt-BR  | ![indisponível](https://img.shields.io/badge/indisponível-red) |
+
+- **estável**: funcionando e testada no app.
+- **em teste**: corrigida e verificada contra o site, aguardando teste no app.
+- **instável**: funciona parcialmente.
+- **indisponível**: site fora do ar ou fonte não funcional (Ler Mangas: servidor do site retornando erro 522/523).
 
 ## Como usar
 
