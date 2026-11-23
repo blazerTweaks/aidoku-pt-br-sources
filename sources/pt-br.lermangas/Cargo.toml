@@ -8,6 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 aidoku = { git = "https://github.com/Aidoku/aidoku-rs.git", version = "0.3.0" }
+madara = { path = "../../templates/madara" }
 
 [dev-dependencies]
 aidoku = { git = "https://github.com/Aidoku/aidoku-rs.git", features = ["test"] }

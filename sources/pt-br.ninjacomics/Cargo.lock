@@ -160,11 +160,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "madara"
+version = "0.1.0"
+dependencies = [
+ "aidoku",
+]
+
+[[package]]
 name = "ninjacomics"
 version = "0.1.0"
 dependencies = [
  "aidoku",
  "aidoku-test",
+ "madara",
 ]
 
 [[package]]
